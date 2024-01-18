@@ -14,8 +14,9 @@ from config import (
     PROTECT_CONTENT,
     START_MSG,
 )
-from database.sql import add_user, full_userbase
+from database.sql import add_user, delete_user, full_userbase, query_msg
 from pyrogram import filters
+from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
 from pyrogram.types import InlineKeyboardMarkup, Message
 
@@ -35,6 +36,27 @@ from helper_func import (
 )
 
 from .button import fsub_button, start_button
+
+START_TIME = datetime.utcnow()
+START_TIME_ISO = START_TIME.replace(microsecond=0).isoformat()
+TIME_DURATION_UNITS = (
+    ("week", 60 * 60 * 24 * 7),
+    ("day", 60**2 * 24),
+    ("hour", 60**2),
+    ("min", 60),
+    ("sec", 1),
+)
+
+
+async def _human_time_duration(seconds):
+    if seconds == 0:
+        return "inf"
+    parts = []
+    for unit, div in TIME_DURATION_UNITS:
+        amount, seconds = divmod(int(seconds), div)
+        if amount > 0:
+            parts.append(f'{amount} {unit}{"" if amount == 1 else "s"}')
+    return ", ".join(parts)
 
 
 @Bot.on_message(
@@ -103,14 +125,14 @@ async def start_command(client: Bot, message: Message):
                     filename=msg.document.file_name,
                 )
             else:
-                caption = "" if not msg.caption else msg.caption.html
+                caption = msg.caption.html if msg.caption else ""
 
             reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
             try:
                 await msg.copy(
                     chat_id=message.from_user.id,
                     caption=caption,
-                    parse_mode="html",
+                    parse_mode=ParseMode.HTML,
                     protect_content=PROTECT_CONTENT,
                     reply_markup=reply_markup,
                 )
@@ -120,7 +142,7 @@ async def start_command(client: Bot, message: Message):
                 await msg.copy(
                     chat_id=message.from_user.id,
                     caption=caption,
-                    parse_mode="html",
+                    parse_mode=ParseMode.HTML,
                     protect_content=PROTECT_CONTENT,
                     reply_markup=reply_markup,
                 )
@@ -132,9 +154,9 @@ async def start_command(client: Bot, message: Message):
             text=START_MSG.format(
                 first=message.from_user.first_name,
                 last=message.from_user.last_name,
-                username=None
+                username=f"@{message.from_user.username}"
                 if not message.from_user.username
-                else "@" + message.from_user.username,
+                else None,
                 mention=message.from_user.mention,
                 id=message.from_user.id,
             ),
@@ -154,9 +176,9 @@ async def not_joined(client: Bot, message: Message):
             text=FORCE_MSG.format(
                 first=message.from_user.first_name,
                 last=message.from_user.last_name,
-                username=None
-                if not message.from_user.username
-                else "@" + message.from_user.username,
+                username=f"@{message.from_user.username}"
+                if message.from_user.username
+                else None,
                 mention=message.from_user.mention,
                 id=message.from_user.id,
             ),
