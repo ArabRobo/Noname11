@@ -212,7 +212,8 @@ class Bot(Client):
                 "Bot Berhenti. Gabung Group https://t.me/SiArab_Support untuk Bantuan"
             )
             sys.exit()
-
+            
+        self.set_parse_mode(enums.ParseMode.HTML)
         self.LOGGER(__name__).info(
             f"[🔥 BERHASIL DIAKTIFKAN! 🔥]\nBOT Dibuat oleh @{OWNER}\nJika @{OWNER} Membutuhkan Bantuan, Silahkan Tanyakan di Grup https://t.me/SiArab_Support"
         )
